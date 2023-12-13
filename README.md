@@ -7,8 +7,8 @@
 测试平台：STM32F407ZGT6，对应的芯片型号可直接使用cubeIDE打开使用，其他的芯片型号也可以使用其中的`ad9959.h`和`ad9959.c`自行配置
 
 驱动路径：
-- [ad9959.h](Core\Inc\ad9959.h)
-- [ad9959.c](Core\Src\ad9959.c)
+- [ad9959.h](Core/Inc/ad9959.h)
+- [ad9959.c](Core/Src/ad9959.c)
 
 ## 实现功能
 
