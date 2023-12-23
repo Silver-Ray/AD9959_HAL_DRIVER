@@ -1,5 +1,7 @@
 # AD9959 Driver for STM32
 
+HUST-STI-S12
+
 ## 前言
 
 使用hal库实现的ad9959驱动程序，串行通信采用最简单的双线模式。
