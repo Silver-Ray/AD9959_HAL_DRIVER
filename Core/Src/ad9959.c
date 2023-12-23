@@ -1,5 +1,4 @@
 #include "ad9959.h"
-#define AD9959_LED
 
 typedef struct
 {
@@ -21,12 +20,6 @@ driverIO PS0 = {PS0_GPIO_Port, PS0_Pin};
 driverIO PS1 = {PS1_GPIO_Port, PS1_Pin};
 driverIO PS2 = {PS2_GPIO_Port, PS2_Pin};
 driverIO PS3 = {PS3_GPIO_Port, PS3_Pin};
-
-#ifdef AD9959_LED
-// Optional IO define
-driverIO LED0 = {LED0_GPIO_Port, LED0_Pin};
-driverIO LED1 = {LED1_GPIO_Port, LED1_Pin};
-#endif
 
 uint8_t CSR_DATA0[1] = {0x10}; // Enable CH0
 uint8_t CSR_DATA1[1] = {0x20}; // Enable CH1
@@ -276,32 +269,6 @@ void Channel_Select(uint8_t Channel)
     }
     else
         WriteData_AD9959(CSR_ADD, 1, CSR_DATA + Channel, 0);
-}
-
-/**
- * @brief  AD9959 Error handler
- * CAN BE MODIFIED
- * @note   LED0 and LED1 will blink 10 times
- * @name  AD9959_error
- * @param  None
- * @retval None
- */
-void AD9959_error(void)
-{
-#ifdef AD9959_LED
-    int i = 10;
-    while (i > 0)
-    {
-        WRT(LED0, 0);
-        WRT(LED1, 1);
-        HAL_Delay(500);
-        WRT(LED0, 1);
-        WRT(LED1, 0);
-        i--;
-    }
-    WRT(LED0, 1);
-    WRT(LED1, 1);
-#endif
 }
 
 /**
