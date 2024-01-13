@@ -69,8 +69,8 @@ void Error_Handler(void);
 #define SDIO3_GPIO_Port GPIOD
 #define PDC_Pin GPIO_PIN_11
 #define PDC_GPIO_Port GPIOD
-#define RESET_Pin GPIO_PIN_14
-#define RESET_GPIO_Port GPIOD
+#define RST_Pin GPIO_PIN_14
+#define RST_GPIO_Port GPIOD
 #define SCLK_Pin GPIO_PIN_0
 #define SCLK_GPIO_Port GPIOD
 #define CS_Pin GPIO_PIN_1

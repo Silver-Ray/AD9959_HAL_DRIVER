@@ -56,7 +56,7 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, SDIO1_Pin|SDIO2_Pin|SDIO3_Pin|PDC_Pin
-                          |RESET_Pin|SCLK_Pin|CS_Pin|UPDATE_Pin
+                          |RST_Pin|SCLK_Pin|CS_Pin|UPDATE_Pin
                           |SDIO0_Pin|PS0_Pin|PS1_Pin|PS2_Pin
                           |PS3_Pin, GPIO_PIN_RESET);
 
@@ -72,7 +72,7 @@ void MX_GPIO_Init(void)
                            PDPin PDPin PDPin PDPin
                            PDPin */
   GPIO_InitStruct.Pin = SDIO1_Pin|SDIO2_Pin|SDIO3_Pin|PDC_Pin
-                          |RESET_Pin|SCLK_Pin|CS_Pin|UPDATE_Pin
+                          |RST_Pin|SCLK_Pin|CS_Pin|UPDATE_Pin
                           |SDIO0_Pin|PS0_Pin|PS1_Pin|PS2_Pin
                           |PS3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;

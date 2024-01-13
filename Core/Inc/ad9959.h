@@ -38,4 +38,5 @@ uint32_t Get_Frequency(void);
 uint8_t Get_Amplitude(void);
 void Sweep_Frequency(uint8_t Channel, uint32_t Start_Freq, uint32_t Stop_Freq, uint32_t Step, uint32_t time, uint8_t NO_DWELL);
 void Channel_Select(uint8_t Channel);
+void AD9959_error(void);
 #endif

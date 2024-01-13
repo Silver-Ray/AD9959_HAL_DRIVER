@@ -12,7 +12,7 @@ driverIO SDIO1 = {SDIO1_GPIO_Port, SDIO1_Pin};
 driverIO SDIO2 = {SDIO2_GPIO_Port, SDIO2_Pin};
 driverIO SDIO3 = {SDIO3_GPIO_Port, SDIO3_Pin};
 driverIO PDC = {PDC_GPIO_Port, PDC_Pin};
-driverIO RST = {RESET_GPIO_Port, RESET_Pin};
+driverIO RST = {RST_GPIO_Port, RST_Pin};
 driverIO SCLK = {SCLK_GPIO_Port, SCLK_Pin};
 driverIO CS = {CS_GPIO_Port, CS_Pin};
 driverIO UPDATE = {UPDATE_GPIO_Port, UPDATE_Pin};
@@ -433,4 +433,9 @@ void ReadData_AD9959(uint8_t RegisterAddress, uint8_t NumberofRegisters, uint8_t
     GPIO_InitStruct.Pull = GPIO_PULLDOWN;
     GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
     HAL_GPIO_Init(SDIO0_GPIO_Port, &GPIO_InitStruct);
+}
+
+void AD9959_error(void)
+{
+    // AD9959 Error Handler
 }
