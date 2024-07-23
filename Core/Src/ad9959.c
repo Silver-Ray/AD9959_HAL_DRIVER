@@ -1,10 +1,6 @@
 #include "ad9959.h"
 
-typedef struct
-{
-    GPIO_TypeDef *GPIOx;
-    uint32_t Pin;
-} driverIO;
+// #define AD9959_LED
 
 // Forced IO definitions
 driverIO SDIO0 = {SDIO0_GPIO_Port, SDIO0_Pin};
@@ -12,7 +8,7 @@ driverIO SDIO1 = {SDIO1_GPIO_Port, SDIO1_Pin};
 driverIO SDIO2 = {SDIO2_GPIO_Port, SDIO2_Pin};
 driverIO SDIO3 = {SDIO3_GPIO_Port, SDIO3_Pin};
 driverIO PDC = {PDC_GPIO_Port, PDC_Pin};
-driverIO RST = {RST_GPIO_Port, RST_Pin};
+driverIO RST = {RESET_GPIO_Port, RESET_Pin};
 driverIO SCLK = {SCLK_GPIO_Port, SCLK_Pin};
 driverIO CS = {CS_GPIO_Port, CS_Pin};
 driverIO UPDATE = {UPDATE_GPIO_Port, UPDATE_Pin};
@@ -30,11 +26,17 @@ uint8_t CSR_DATA[4] = {0x10, 0x20, 0x40, 0x80}; // Enable CH0,CH1,CH2,CH3
 
 uint8_t FR2_DATA[2] = {0x00, 0x00}; // default Value = 0x0000
 
-uint8_t CPOW0_DATA[2] = {0x00, 0x00}; // default Value = 0x0000   @ = POW/2^14*360
+/*
+uint8_t LSRR_DATA[2] = {0x00, 0x00};            // default Value = 0x----
+uint8_t RDW_DATA[4] = {0x00, 0x00, 0x00, 0x00}; // default Value = 0x--------
+uint8_t FDW_DATA[4] = {0x00, 0x00, 0x00, 0x00}; // default Value = 0x--------
+*/
 
-uint32_t SinFre[4] = {10000000, 10000000, 200000000, 40000};
+// uint32_t SinFre[4] = {10000000, 10000000, 200000000, 40000};
+uint32_t SinFre[4] = {1000, 1000, 1000, 1000};
 uint32_t SinAmp[4] = {1023, 1023, 1023, 1023};
-uint32_t SinPhr[4] = {0, 4095, 4095 * 3, 4095 * 2};
+// uint32_t SinPhr[4] = {0, 4095, 4095 * 3, 4095 * 2};
+uint32_t SinPhr[4] = {0, 0, 0, 0};
 
 /**
  * @brief Initializes the AD9959 module.
@@ -56,10 +58,10 @@ void Init_AD9959(void)
     Write_Phase(1, SinPhr[1]);
     Write_Phase(2, SinPhr[2]);
 
-    Write_frequence(0, SinFre[0]);
-    Write_frequence(1, SinFre[1]);
-    Write_frequence(2, SinFre[2]);
-    Write_frequence(3, SinFre[3]);
+    Write_Frequence(0, SinFre[0]);
+    Write_Frequence(1, SinFre[1]);
+    Write_Frequence(2, SinFre[2]);
+    Write_Frequence(3, SinFre[3]);
 
     Write_Amplitude(3, SinAmp[3]);
     Write_Amplitude(0, SinAmp[0]);
@@ -187,7 +189,7 @@ void WriteData_AD9959(uint8_t RegisterAddress, uint8_t NumberofRegisters, uint8_
  * @param Channel The channel number to write the frequency to.(0 to 3)
  * @param Freq The frequency value to be written.(1 to 500000000)
  */
-void Write_frequence(uint8_t Channel, uint32_t Freq)
+void Write_Frequence(uint8_t Channel, uint32_t Freq)
 {
     if (Freq > 500000000 || Freq < 1)
     {
@@ -196,12 +198,7 @@ void Write_frequence(uint8_t Channel, uint32_t Freq)
     }
 
     uint8_t CFTW0_DATA[4] = {0x00, 0x00, 0x00, 0x00};
-    uint32_t Temp;
-    Temp = (uint32_t)Freq * 8.589934592; // The input frequency factor is divided into four bytes.  4.294967296=(2^32)/500000000
-    CFTW0_DATA[3] = (uint8_t)Temp;
-    CFTW0_DATA[2] = (uint8_t)(Temp >> 8);
-    CFTW0_DATA[1] = (uint8_t)(Temp >> 16);
-    CFTW0_DATA[0] = (uint8_t)(Temp >> 24);
+    Freq2Word(Freq, CFTW0_DATA);
     Channel_Select(Channel);
     WriteData_AD9959(CFTW0_ADD, 4, CFTW0_DATA, 1); // CTW0 address 0x04.Output CH0 setting frequency
 }
@@ -220,36 +217,28 @@ void Write_Amplitude(uint8_t Channel, uint16_t Ampli)
         Ampli = 114;
         AD9959_error();
     }
-
-    uint16_t A_temp;                          //=0x23ff;
     uint8_t ACR_DATA[3] = {0x00, 0x00, 0x00}; // default Value = 0x--0000 Rest = 18.91/Iout
-
-    A_temp = Ampli | 0x1000;
-    ACR_DATA[2] = (uint8_t)A_temp;        // Low bit data
-    ACR_DATA[1] = (uint8_t)(A_temp >> 8); // High bit data
+    Amp2Word(Ampli, ACR_DATA);
     Channel_Select(Channel);
     WriteData_AD9959(ACR_ADD, 3, ACR_DATA, 1);
 }
 
 /**
- * @brief  Set up the Phase
- * @name  Write_Phase
- * @example Phase=4095 => Degree=pi/2||Phase=9215 => Degree=pi||Phase=16383 => Degree=2pi
- * @param  channel, Phase
- * @retval None
+ * @brief Writes the phase value for a specific channel.
+ *
+ * @param Channel The channel number.(0 to 3)
+ * @param Phase The phase value(degree) to be written.(0 to 359)
  */
 void Write_Phase(uint8_t Channel, uint16_t Phase)
 {
     // Phase_max = 16383
-    if (Phase > 16383 || Phase < 0)
+    if (Phase > 359 || Phase < 0)
     {
-        Phase = 16383;
+        Phase = 0;
         AD9959_error();
     }
-    uint16_t P_temp = 0;
-    P_temp = (uint16_t)Phase;
-    CPOW0_DATA[1] = (uint8_t)P_temp;
-    CPOW0_DATA[0] = (uint8_t)(P_temp >> 8);
+    uint8_t CPOW0_DATA[2] = {0x00, 0x00};
+    Phase2Word(Phase, CPOW0_DATA);
     Channel_Select(Channel);
     WriteData_AD9959(CPOW0_ADD, 2, CPOW0_DATA, 1);
 }
@@ -272,13 +261,25 @@ void Channel_Select(uint8_t Channel)
 }
 
 /**
+ * @brief  AD9959 Error handler
+ * CAN BE MODIFIED
+ * @note
+ * @name  AD9959_error
+ * @param  None
+ * @retval None
+ */
+void AD9959_error(void)
+{
+}
+
+/**
  * @brief Performs a frequency sweep on the AD9959 device.
  *
  * @param Channel The channel number to perform the sweep on.
  * @param Start_Freq The starting frequency of the sweep.
  * @param Stop_Freq The ending frequency of the sweep.
  * @param Step The frequency step size for each iteration of the sweep.
- * @param time The duration of each frequency step in microsecond.(1-2048)
+ * @param time The duration of each frequency step in microsecond.(1-2048)j
  * @param NO_DWELL
  */
 void Sweep_Frequency(uint8_t Channel, uint32_t Start_Freq, uint32_t Stop_Freq, uint32_t Step, uint32_t time, uint8_t NO_DWELL)
@@ -401,7 +402,7 @@ void ReadData_AD9959(uint8_t RegisterAddress, uint8_t NumberofRegisters, uint8_t
 
     WRT(SCLK, 0);
 
-    // 切换到输入模式
+    // Input mode
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     GPIO_InitStruct.Pin = SDIO0_Pin;
     GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -410,8 +411,7 @@ void ReadData_AD9959(uint8_t RegisterAddress, uint8_t NumberofRegisters, uint8_t
     HAL_GPIO_Init(SDIO0_GPIO_Port, &GPIO_InitStruct);
     delay_9959(0x20);
     // Read data
-    // 每个字节的数据都是从高位开始传输
-    // 第一个传输的字节是最高位的字节
+    // MSB first
     for (RegisterIndex = 0; RegisterIndex < NumberofRegisters; RegisterIndex++)
     {
         ValueToRead = 0;
@@ -435,7 +435,106 @@ void ReadData_AD9959(uint8_t RegisterAddress, uint8_t NumberofRegisters, uint8_t
     HAL_GPIO_Init(SDIO0_GPIO_Port, &GPIO_InitStruct);
 }
 
-void AD9959_error(void)
+void Stop_AD9959(void)
 {
-    // AD9959 Error Handler
+    uint8_t CFR_data[3] = {0};
+    ReadData_AD9959(CFTW0_ADD, 3, CFR_data);
+    CFR_data[0] = CFR_data[0] | 0x02;
+    WriteData_AD9959(CFR_ADD, 3, CFR_data, 1);
+}
+
+/**
+ * @brief Set the 2fsk object
+ *
+ * @param Channel The channel number to write the frequency to.(0 to 3)
+ * @param f_start The start frequency value(Hz) to be written when profile pin is reset.
+ * @param f_stop The stop frequency value(Hz) to be written when profile pin is set.
+ * @return * void
+ */
+void SET_2FSK(uint8_t Channel, double f_start, double f_stop)
+{
+    uint8_t f_startWord[4];
+    uint8_t f_stopWord[4];
+    uint8_t CFR_data[3] = {0x80, 0x23, 0x30}; // none RU/RD
+    uint8_t FR_data[3] = {0xD0, 0x00, 0x00};
+
+    Channel_Select(Channel);
+
+    WriteData_AD9959(FR1_ADD, 3, FR_data, 0);
+    WriteData_AD9959(CFR_ADD, 3, CFR_data, 0);
+
+    Freq2Word(f_start, f_startWord);
+    Freq2Word(f_stop, f_stopWord);
+
+    WriteData_AD9959(CFTW0_ADD, 4, f_startWord, 0);
+    WriteData_AD9959(CW1, 4, f_stopWord, 1);
+}
+
+/**
+ * @brief Set the 2ask object
+ *
+ * @param Channel The channel number to write the frequency to.(0 to 3)
+ * @param f The frequency value(Hz) to be written.(1 to 500000000)
+ * @param A_start The start amplitude value to be written when profile pin is reset.(0 to 1023)
+ * @param A_stop The stop amplitude value to be written when profile pin is set.(0 to 1023)
+ * @return * void
+ */
+void SET_2ASK(uint8_t Channel, double f, uint16_t A_start, uint16_t A_stop)
+{
+    uint8_t fWord[4];
+    uint8_t A_startWord[3] = {0x00, 0x00, 0x00};
+    uint8_t A_stopWord[4] = {0x00, 0x00, 0x00, 0x00};
+    uint8_t A_stopWord_temp[3] = {0x00, 0x00, 0x00};
+
+    uint8_t CFR_data[3] = {0x40, 0x03, 0x30};
+    uint8_t FR_data[3] = {0xD0, 0x00, 0x00};
+
+    Amp2Word(A_start, A_startWord);
+    Amp2Word(A_stop, A_stopWord_temp);
+
+    // A_stopWord_teep[9:0]->A_stopWord[31:22]
+    uint32_t Temp = ((uint32_t)(A_stopWord_temp[1] | 0x03)) << 8 | (uint32_t)(A_stopWord_temp[2]);
+    Temp = Temp << 22;
+    A_stopWord[0] = (uint8_t)(Temp >> 24);
+    A_stopWord[1] = (uint8_t)(Temp >> 22);
+
+    Channel_Select(Channel);
+
+    WriteData_AD9959(FR1_ADD, 3, FR_data, 0);
+    WriteData_AD9959(CFR_ADD, 3, CFR_data, 0);
+
+    WriteData_AD9959(ACR_ADD, 3, A_startWord, 0);
+    WriteData_AD9959(CW1, 4, A_stopWord, 0);
+
+    Freq2Word(f, fWord);
+    WriteData_AD9959(CFTW0_ADD, 4, fWord, 1);
+}
+
+void Freq2Word(double f, uint8_t *fWord)
+{
+    // fWord 4 bytes
+    uint32_t Temp;
+    Temp = (uint32_t)f * 8.589934592; // The input frequency factor is divided into four bytes.  8.589934592=(2^32)/500000000
+    fWord[3] = (uint8_t)Temp;
+    fWord[2] = (uint8_t)(Temp >> 8);
+    fWord[1] = (uint8_t)(Temp >> 16);
+    fWord[0] = (uint8_t)(Temp >> 24);
+}
+
+void Amp2Word(uint16_t A, uint8_t *AWord)
+{
+    // AWord 3 bytes
+    uint16_t Temp;
+    Temp = (uint16_t)A | 0x1000; // Enable amplitude multiplier
+    AWord[2] = (uint8_t)Temp;
+    AWord[1] = (uint8_t)(Temp >> 8);
+    AWord[0] = 0x00;
+}
+
+void Phase2Word(uint16_t Phase, uint8_t *PWord)
+{
+    // PWord 2 bytes
+    uint16_t Temp = (uint16_t)(0.02197265625 * Phase); // 360/2^32 = 0.02197265625
+    PWord[1] = (uint8_t)Temp;
+    PWord[0] = (uint8_t)(Temp >> 8);
 }
