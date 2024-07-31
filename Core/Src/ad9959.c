@@ -1,7 +1,5 @@
 #include "ad9959.h"
 
-// #define AD9959_LED
-
 // Forced IO definitions
 driverIO SDIO0 = {SDIO0_GPIO_Port, SDIO0_Pin};
 driverIO SDIO1 = {SDIO1_GPIO_Port, SDIO1_Pin};
@@ -50,8 +48,8 @@ void Init_AD9959(void)
     InitIO_9959();
     InitReset();
 
-    WriteData_AD9959(FR1_ADD, 3, FR1_DATA, 1);
-    WriteData_AD9959(CFR_ADD, 3, CFR_DATA, 1);
+    WriteData_AD9959(FR1_ADD, 3, FR1_DATA);
+    WriteData_AD9959(CFR_ADD, 3, CFR_DATA);
 
     Write_Phase(3, SinPhr[3]);
     Write_Phase(0, SinPhr[0]);
@@ -117,7 +115,7 @@ void InitReset(void)
  * It triggers the IO update operation to ensure that any pending changes in the
  * control registers are applied to the device.
  */
-void IO_Update(void)
+void AD9959_IO_Update(void)
 {
     WRT(UPDATE, 1);
     delay_9959(1);
@@ -135,7 +133,7 @@ void IO_Update(void)
  * @param update Flag indicating whether to update the device after writing data.
  *               Set to 1 to update the device, or 0 to skip the update.
  */
-void WriteData_AD9959(uint8_t RegisterAddress, uint8_t NumberofRegisters, uint8_t *RegisterData, uint8_t update)
+void WriteData_AD9959(uint8_t RegisterAddress, uint8_t NumberofRegisters, uint8_t *RegisterData)
 {
     uint8_t ControlValue = 0;
     uint8_t ValueToWrite = 0;
@@ -178,8 +176,6 @@ void WriteData_AD9959(uint8_t RegisterAddress, uint8_t NumberofRegisters, uint8_
         }
         WRT(SCLK, 0);
     }
-    if (update == 1)
-        IO_Update();
     WRT(CS, 1);
 }
 
@@ -200,7 +196,7 @@ void Write_Frequence(uint8_t Channel, uint32_t Freq)
     uint8_t CFTW0_DATA[4] = {0x00, 0x00, 0x00, 0x00};
     Freq2Word(Freq, CFTW0_DATA);
     Channel_Select(Channel);
-    WriteData_AD9959(CFTW0_ADD, 4, CFTW0_DATA, 1); // CTW0 address 0x04.Output CH0 setting frequency
+    WriteData_AD9959(CFTW0_ADD, 4, CFTW0_DATA); // CTW0 address 0x04.Output CH0 setting frequency
 }
 
 /**
@@ -220,7 +216,7 @@ void Write_Amplitude(uint8_t Channel, uint16_t Ampli)
     uint8_t ACR_DATA[3] = {0x00, 0x00, 0x00}; // default Value = 0x--0000 Rest = 18.91/Iout
     Amp2Word(Ampli, ACR_DATA);
     Channel_Select(Channel);
-    WriteData_AD9959(ACR_ADD, 3, ACR_DATA, 1);
+    WriteData_AD9959(ACR_ADD, 3, ACR_DATA);
 }
 
 /**
@@ -240,7 +236,7 @@ void Write_Phase(uint8_t Channel, uint16_t Phase)
     uint8_t CPOW0_DATA[2] = {0x00, 0x00};
     Phase2Word(Phase, CPOW0_DATA);
     Channel_Select(Channel);
-    WriteData_AD9959(CPOW0_ADD, 2, CPOW0_DATA, 1);
+    WriteData_AD9959(CPOW0_ADD, 2, CPOW0_DATA);
 }
 
 /**
@@ -257,7 +253,7 @@ void Channel_Select(uint8_t Channel)
         return;
     }
     else
-        WriteData_AD9959(CSR_ADD, 1, CSR_DATA + Channel, 0);
+        WriteData_AD9959(CSR_ADD, 1, CSR_DATA + Channel);
 }
 
 /**
@@ -305,8 +301,8 @@ void Sweep_Frequency(uint8_t Channel, uint32_t Start_Freq, uint32_t Stop_Freq, u
         CFR_DATA_Freq[1] = CFR_DATA_Freq[1] | 0x80;
 
     uint8_t FR1_DATA_sweep[3] = {0xD3, 0x00, 0x00};
-    WriteData_AD9959(CFR_ADD, 3, CFR_DATA_Freq, 1);
-    WriteData_AD9959(FR1_ADD, 3, FR1_DATA_sweep, 1);
+    WriteData_AD9959(CFR_ADD, 3, CFR_DATA_Freq);
+    WriteData_AD9959(FR1_ADD, 3, FR1_DATA_sweep);
 
     uint32_t Start_Freq_word, Stop_Freq_Word, Step_Word;
     uint8_t Time_word;
@@ -323,31 +319,31 @@ void Sweep_Frequency(uint8_t Channel, uint32_t Start_Freq, uint32_t Stop_Freq, u
     CFTW0_DATA_START[2] = (uint8_t)(Start_Freq_word >> 8);
     CFTW0_DATA_START[1] = (uint8_t)(Start_Freq_word >> 16);
     CFTW0_DATA_START[0] = (uint8_t)(Start_Freq_word >> 24);
-    WriteData_AD9959(CFTW0_ADD, 4, CFTW0_DATA_START, 0);
+    WriteData_AD9959(CFTW0_ADD, 4, CFTW0_DATA_START);
 
     CFTW0_DATA_STOP[3] = (uint8_t)Stop_Freq_Word;
     CFTW0_DATA_STOP[2] = (uint8_t)(Stop_Freq_Word >> 8);
     CFTW0_DATA_STOP[1] = (uint8_t)(Stop_Freq_Word >> 16);
     CFTW0_DATA_STOP[0] = (uint8_t)(Stop_Freq_Word >> 24);
-    WriteData_AD9959(CW1, 4, CFTW0_DATA_STOP, 0);
+    WriteData_AD9959(CW1, 4, CFTW0_DATA_STOP);
 
     RDW_DATA[3] = (uint8_t)Step_Word;
     RDW_DATA[2] = (uint8_t)(Step_Word >> 8);
     RDW_DATA[1] = (uint8_t)(Step_Word >> 16);
     RDW_DATA[0] = (uint8_t)(Step_Word >> 24);
-    WriteData_AD9959(RDW_ADD, 4, RDW_DATA, 0);
+    WriteData_AD9959(RDW_ADD, 4, RDW_DATA);
 
     uint8_t FDW_DATA[4] = {0x00, 0x00, 0x00, 0x00};
     FDW_DATA[3] = (uint8_t)Step_Word;
     FDW_DATA[2] = (uint8_t)(Step_Word >> 8);
     FDW_DATA[1] = (uint8_t)(Step_Word >> 16);
     FDW_DATA[0] = (uint8_t)(Step_Word >> 24);
-    WriteData_AD9959(FDW_ADD, 4, FDW_DATA, 0);
+    WriteData_AD9959(FDW_ADD, 4, FDW_DATA);
 
     uint8_t LSRR_DATA[2] = {0x00, 0x00};
     LSRR_DATA[1] = (uint8_t)Time_word;
     LSRR_DATA[0] = (uint8_t)Time_word;
-    WriteData_AD9959(LSRR_ADD, 2, LSRR_DATA, 1); // UPDATE
+    WriteData_AD9959(LSRR_ADD, 2, LSRR_DATA); // UPDATE
 
     switch (Channel)
     {
@@ -440,7 +436,7 @@ void Stop_AD9959(void)
     uint8_t CFR_data[3] = {0};
     ReadData_AD9959(CFTW0_ADD, 3, CFR_data);
     CFR_data[0] = CFR_data[0] | 0x02;
-    WriteData_AD9959(CFR_ADD, 3, CFR_data, 1);
+    WriteData_AD9959(CFR_ADD, 3, CFR_data);
 }
 
 /**
@@ -460,14 +456,14 @@ void SET_2FSK(uint8_t Channel, double f_start, double f_stop)
 
     Channel_Select(Channel);
 
-    WriteData_AD9959(FR1_ADD, 3, FR_data, 0);
-    WriteData_AD9959(CFR_ADD, 3, CFR_data, 0);
+    WriteData_AD9959(FR1_ADD, 3, FR_data);
+    WriteData_AD9959(CFR_ADD, 3, CFR_data);
 
     Freq2Word(f_start, f_startWord);
     Freq2Word(f_stop, f_stopWord);
 
-    WriteData_AD9959(CFTW0_ADD, 4, f_startWord, 0);
-    WriteData_AD9959(CW1, 4, f_stopWord, 1);
+    WriteData_AD9959(CFTW0_ADD, 4, f_startWord);
+    WriteData_AD9959(CW1, 4, f_stopWord);
 }
 
 /**
@@ -500,14 +496,14 @@ void SET_2ASK(uint8_t Channel, double f, uint16_t A_start, uint16_t A_stop)
 
     Channel_Select(Channel);
 
-    WriteData_AD9959(FR1_ADD, 3, FR_data, 0);
-    WriteData_AD9959(CFR_ADD, 3, CFR_data, 0);
+    WriteData_AD9959(FR1_ADD, 3, FR_data);
+    WriteData_AD9959(CFR_ADD, 3, CFR_data);
 
-    WriteData_AD9959(ACR_ADD, 3, A_startWord, 0);
-    WriteData_AD9959(CW1, 4, A_stopWord, 0);
+    WriteData_AD9959(ACR_ADD, 3, A_startWord);
+    WriteData_AD9959(CW1, 4, A_stopWord);
 
     Freq2Word(f, fWord);
-    WriteData_AD9959(CFTW0_ADD, 4, fWord, 1);
+    WriteData_AD9959(CFTW0_ADD, 4, fWord);
 }
 
 void Freq2Word(double f, uint8_t *fWord)
@@ -534,7 +530,7 @@ void Amp2Word(uint16_t A, uint8_t *AWord)
 void Phase2Word(uint16_t Phase, uint8_t *PWord)
 {
     // PWord 2 bytes
-    uint16_t Temp = (uint16_t)(0.02197265625 * Phase); // 360/2^32 = 0.02197265625
+    uint16_t Temp = (uint16_t)(45.511111111 * Phase); // 360/2^16 = 45.511111111
     PWord[1] = (uint8_t)Temp;
     PWord[0] = (uint8_t)(Temp >> 8);
 }

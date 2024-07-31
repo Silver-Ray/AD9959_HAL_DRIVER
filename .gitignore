@@ -13,3 +13,5 @@
 # eide template
 *.ept
 *.eide-template
+
+/.vscode
